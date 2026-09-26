@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>رادار البصمة المكانية</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{--bg:#070d1a;--surface:#0f1928;--card:#131f33;--border:#1a3050;--accent:#00c8f0;--accent2:#ff5f2e;--text:#dde8f5;--muted:#52708a;--green:#0fd494;--red:#f04060;--yellow:#f5a623;--purple:#9b6dff;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 60% 40% at 80% 10%,rgba(0,200,240,0.06) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 10% 80%,rgba(155,109,255,0.05) 0%,transparent 60%);pointer-events:none;}
+  body::after{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,200,240,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,240,0.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;}
+  .wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:0 20px 60px;}
+  header{padding:48px 0 36px;text-align:center;border-bottom:1px solid var(--border);margin-bottom:40px;}
+  .logo-line{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px;}
+  .logo-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 24px rgba(0,200,240,0.3);}
+  header h1{font-size:1.9rem;font-weight:700;background:linear-gradient(135deg,var(--accent) 0%,var(--purple) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  header p{color:var(--muted);font-size:.88rem;margin-top:6px;}
+  .tabs{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap;}
+  .tab{padding:9px 22px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-size:.83rem;font-family:inherit;transition:.2s;}
+  .tab.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600;}
+  .tab:hover:not(.active){border-color:var(--accent);color:var(--accent);}
+  .panel{display:none;}.panel.active{display:block;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px;animation:fadeUp .4s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .card-title{font-size:.95rem;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+  .upload-zone{border:2px dashed var(--border);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:.2s;background:var(--surface);}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(0,200,240,0.04);}
+  .upload-icon{font-size:2.5rem;margin-bottom:12px;}
+  .upload-title{font-size:1rem;font-weight:600;margin-bottom:6px;}
+  .upload-sub{font-size:.82rem;color:var(--muted);}
+  input[type=file]{display:none;}
+  .file-info{background:var(--surface);border:1px solid var(--green);border-radius:10px;padding:14px 18px;margin-top:12px;display:none;align-items:center;gap:10px;}
+  .file-info.show{display:flex;}
+  .file-name{font-weight:600;font-size:.9rem;color:var(--green);}
+  .filter-section{margin-top:16px;display:none;}
+  .filter-section.show{display:block;}
+  .filter-label{font-size:.82rem;color:var(--muted);margin-bottom:10px;}
+  .names-list{display:flex;flex-wrap:wrap;gap:8px;max-height:200px;overflow-y:auto;margin-bottom:10px;}
+  .name-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-size:.8rem;transition:.2s;}
+  .name-chip:hover{border-color:var(--accent);color:var(--accent);}
+  .name-chip.selected{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600;}
+  .custom-input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:inherit;font-size:.88rem;outline:none;transition:.2s;margin-top:8px;}
+  .custom-input:focus{border-color:var(--accent);}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:10px;border:none;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;transition:.2s;}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),#0090b8);color:#000;box-shadow:0 4px 20px rgba(0,200,240,0.25);}
+  .btn-primary:hover{transform:translateY(-1px);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,.25);border-top-color:#000;border-radius:50%;animation:spin .65s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .status{padding:12px 16px;border-radius:8px;font-size:.85rem;border:1px solid;margin-top:12px;display:none;}
+  .status.show{display:block;}
+  .status.err{border-color:var(--red);background:rgba(240,64,96,.06);color:var(--red);}
+  .status.loading{border-color:var(--accent);background:rgba(0,200,240,.06);color:var(--accent);}
+  #results{display:none;}
+  .result-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px;}
+  .result-name{font-size:1.3rem;font-weight:700;}
+  .result-addr{font-size:.82rem;color:var(--muted);margin-top:3px;}
+  .risk-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:20px;font-size:.8rem;font-weight:700;border:1px solid;}
+  .risk-Low{background:rgba(15,212,148,.1);color:var(--green);border-color:var(--green);}
+  .risk-Medium{background:rgba(245,166,35,.1);color:var(--yellow);border-color:var(--yellow);}
+  .risk-High{background:rgba(240,64,96,.1);color:var(--red);border-color:var(--red);}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:24px;}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 12px;text-align:center;transition:.2s;}
+  .metric:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .metric-val{font-size:1.9rem;font-weight:700;margin:4px 0 2px;line-height:1;}
+  .metric-lbl{font-size:.72rem;color:var(--muted);line-height:1.3;}
+  .c-accent{color:var(--accent)}.c-green{color:var(--green)}.c-red{color:var(--red)}.c-yellow{color:var(--yellow)}.c-purple{color:var(--purple)}
+  .bar-wrap{margin-bottom:16px;}
+  .bar-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:6px;}
+  .bar-track{height:10px;background:var(--surface);border-radius:5px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:5px;transition:width 1s cubic-bezier(.4,0,.2,1);width:0;}
+  .kw-wrap{display:flex;flex-wrap:wrap;gap:8px;}
+  .kw{padding:5px 14px;border-radius:20px;font-size:.78rem;background:rgba(0,200,240,.08);color:var(--accent);border:1px solid rgba(0,200,240,.2);}
+  .summary-box{background:var(--surface);border-right:3px solid var(--accent);border-radius:0 10px 10px 0;padding:16px 18px;line-height:1.85;font-size:.88rem;}
+  .gap-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);font-size:.85rem;}
+  .gap-row:last-child{border-bottom:none;}
+  .gap-key{color:var(--muted);}.gap-val{font-weight:600;}
+  .hist-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:10px;background:var(--surface);border:1px solid var(--border);margin-bottom:10px;cursor:pointer;transition:.2s;}
+  .hist-item:hover{border-color:var(--accent);}
+  .hist-name{font-weight:600;font-size:.9rem;}
+  .hist-meta{font-size:.75rem;color:var(--muted);margin-top:2px;}
+  .empty{color:var(--muted);text-align:center;padding:40px;font-size:.88rem;}
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card);border:1px solid var(--border);padding:12px 24px;border-radius:10px;font-size:.85rem;transition:transform .3s;z-index:100;white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .toast.ok{border-color:var(--green);color:var(--green);}
+  .toast.err{border-color:var(--red);color:var(--red);}
+  .chart-wrap{background:var(--surface);border-radius:12px;padding:20px;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo-line">
+      <div class="logo-icon">🛰</div>
+      <h1>رادار البصمة المكانية</h1>
+    </div>
+    <p>قياس اعتماد المطاعم على منصات اقتصاد الـ Gig Economy</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('analyze',this)">تحليل مطعم</button>
+    <button class="tab" onclick="switchTab('dashboard',this)">📊 الداشبورد</button>
+    <button class="tab" onclick="switchTab('history',this)">السجل</button>
+  </div>
+
+  <div class="panel active" id="tab-analyze">
+    <div class="card">
+      <div class="card-title">📂 رفع ملف البيانات</div>
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+        <div class="upload-icon">📁</div>
+        <div class="upload-title">اسحب الملف هنا أو اضغط للرفع</div>
+        <div class="upload-sub">يدعم CSV و JSON</div>
+      </div>
+      <input type="file" id="file-input" accept=".csv,.json" onchange="fileSelected(this)">
+      <div class="file-info" id="file-info">
+        <span>✅</span>
+        <span class="file-name" id="file-name"></span>
+      </div>
+      <div class="filter-section" id="filter-section">
+        <div class="filter-label">اختر المطعم:</div>
+        <div class="names-list" id="names-list"></div>
+        <input class="custom-input" id="custom-name" placeholder="أو اكتب اسم المطعم يدوياً..." oninput="customName(this.value)">
+      </div>
+      <div class="status" id="status"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-analyze" onclick="runAnalysis()" disabled>
+          <span>🔍</span> تحليل
+        </button>
+        <button class="btn btn-ghost" onclick="clearAll()">مسح</button>
+      </div>
+    </div>
+
+    <div id="results">
+      <div class="card">
+        <div class="card-title">🧹 تقرير تنظيف البيانات</div>
+        <div id="cleaning-content"></div>
+      </div>
+      <div class="card">
+        <div class="result-header">
+          <div>
+            <div class="result-name" id="r-name">—</div>
+            <div class="result-addr" id="r-addr">—</div>
+          </div>
+          <div id="r-risk"></div>
+        </div>
+        <div class="metrics" id="r-metrics"></div>
+        <div id="r-bars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 تفاصيل الفجوة</div>
+        <div id="r-gap"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔑 كلمات دلالية مكتشفة</div>
+        <div class="kw-wrap" id="r-kw"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🤖 ملخص التحليل</div>
+        <div class="summary-box" id="r-summary"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="tab-dashboard">
+    <div class="card">
+      <div class="card-title">📊 مقارنة المطاعم المحللة</div>
+      <div id="dash-empty" class="empty">حلل مطعمين على الأقل لعرض الداشبورد</div>
+      <div id="dash-content" style="display:none;">
+        <div class="chart-wrap"><canvas id="chart-workers"></canvas></div>
+        <div class="chart-wrap"><canvas id="chart-gap"></canvas></div>
+        <div class="chart-wrap"><canvas id="chart-activity"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="tab-history">
+    <div class="card">
+      <div class="card-title">📁 سجل التحليلات</div>
+      <div id="hist-list"><div class="empty">لم يتم تحليل أي مطعم بعد</div></div>
+    </div>
+    <div class="card" id="hist-compare" style="display:none;">
+      <div class="card-title">مقارنة المطاعم</div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+          <thead><tr>
+            <th style="padding:10px;text-align:right;color:var(--muted);border-bottom:1px solid var(--border);">المطعم</th>
+            <th style="padding:10px;text-align:right;color:var(--muted);border-bottom:1px solid var(--border);">نقاط النشاط</th>
+            <th style="padding:10px;text-align:right;color:var(--muted);border-bottom:1px solid var(--border);">عمال مقدّرون</th>
+            <th style="padding:10px;text-align:right;color:var(--muted);border-bottom:1px solid var(--border);">الفجوة</th>
+            <th style="padding:10px;text-align:right;color:var(--muted);border-bottom:1px solid var(--border);">الخطر</th>
+          </tr></thead>
+          <tbody id="compare-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let history = JSON.parse(localStorage.getItem("gig_history") || "[]");
+let selectedFile = null;
+let selectedName = "";
+let charts = {};
+
+function switchTab(name, el) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("tab-" + name).classList.add("active");
+  if (name === "history") renderHistory();
+  if (name === "dashboard") renderDashboard();
+}
+
+function toast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => t.className = "toast", 3000);
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.className = "status show " + type;
+}
+
+function dragOver(e) { e.preventDefault(); document.getElementById("upload-zone").classList.add("drag"); }
+function dragLeave() { document.getElementById("upload-zone").classList.remove("drag"); }
+function dropFile(e) { e.preventDefault(); dragLeave(); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); }
+function fileSelected(input) { if (input.files[0]) handleFile(input.files[0]); }
+
+async function handleFile(file) {
+  selectedFile = file;
+  document.getElementById("file-name").textContent = file.name;
+  document.getElementById("file-info").className = "file-info show";
+  document.getElementById("btn-analyze").disabled = false;
+  document.getElementById("status").className = "status";
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    const res = await fetch("/preview", { method: "POST", body: formData });
+    const data = await res.json();
+    if (data.names && data.names.length > 0) {
+      document.getElementById("filter-section").className = "filter-section show";
+      document.getElementById("names-list").innerHTML = data.names.map(n =>
+        `<span class="name-chip" onclick="selectName('${n.replace(/'/g,"\\'")}', this)">${n}</span>`
+      ).join("");
+    }
+  } catch(e) {}
+}
+
+function selectName(name, el) {
+  selectedName = name;
+  document.querySelectorAll(".name-chip").forEach(c => c.classList.remove("selected"));
+  el.classList.add("selected");
+  document.getElementById("custom-name").value = "";
+}
+
+function customName(val) {
+  selectedName = val;
+  document.querySelectorAll(".name-chip").forEach(c => c.classList.remove("selected"));
+}
+
+function clearAll() {
+  selectedFile = null;
+  selectedName = "";
+  document.getElementById("file-input").value = "";
+  document.getElementById("file-info").className = "file-info";
+  document.getElementById("filter-section").className = "filter-section";
+  document.getElementById("btn-analyze").disabled = true;
+  document.getElementById("results").style.display = "none";
+  document.getElementById("status").className = "status";
+}
+
+async function runAnalysis() {
+  if (!selectedFile) return;
+  if (!selectedName.trim()) { setStatus("❌ اختر مطعماً أو اكتب اسمه", "err"); return; }
+  const btn = document.getElementById("btn-analyze");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spin"></span> جاري التحليل...`;
+  setStatus("⏳ جاري تحليل البيانات...", "loading");
+  document.getElementById("results").style.display = "none";
+  const formData = new FormData();
+  formData.append("file", selectedFile);
+  formData.append("filter_name", selectedName.trim());
+  try {
+    const res = await fetch("/analyze", { method: "POST", body: formData });
+    const data = await res.json();
+    if (data.error) {
+      setStatus("❌ " + data.error, "err");
+    } else {
+      renderResults(data);
+      history.unshift({ ...data, timestamp: new Date().toLocaleString("ar-SA") });
+      if (history.length > 50) history = history.slice(0, 50);
+      localStorage.setItem("gig_history", JSON.stringify(history));
+      toast("✅ اكتمل التحليل", "ok");
+      document.getElementById("status").className = "status";
+    }
+  } catch(e) { setStatus("حدث خطأ في الاتصال", "err"); }
+  btn.disabled = false;
+  btn.innerHTML = `<span>🔍</span> تحليل`;
+}
+
+function renderCleaningReport(r) {
+  if (!r) return;
+  document.getElementById("cleaning-content").innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">
+      <div class="metric"><div class="metric-val c-accent">${r.total_before}</div><div class="metric-lbl">إجمالي التقييمات</div></div>
+      <div class="metric"><div class="metric-val c-green">${r.total_after}</div><div class="metric-lbl">بعد التنظيف</div></div>
+      <div class="metric"><div class="metric-val c-red">${r.removed_total}</div><div class="metric-lbl">تم حذفها</div></div>
+      <div class="metric"><div class="metric-val c-yellow">${r.removed_duplicate}</div><div class="metric-lbl">مكررة</div></div>
+      <div class="metric"><div class="metric-val" style="color:var(--muted)">${r.removed_empty}</div><div class="metric-lbl">فارغة</div></div>
+      <div class="metric"><div class="metric-val" style="color:var(--muted)">${r.removed_short}</div><div class="metric-lbl">قصيرة جداً</div></div>
+    </div>`;
+}
+
+function renderResults(d) {
+  renderCleaningReport(d.cleaning_report);
+  const obs = d.observatory_metrics;
+  const an = d.analysis;
+  document.getElementById("r-name").textContent = d.name || "—";
+  document.getElementById("r-addr").textContent = d.address || "—";
+  const rl = an.risk_level || "Low";
+  document.getElementById("r-risk").innerHTML = `<div class="risk-badge risk-${rl}">${rl==="High"?"⚠️":rl==="Medium"?"⚡":"✅"} ${rl} Risk</div>`;
+
+  document.getElementById("r-metrics").innerHTML = [
+    {lbl:"عدد كلمات التوصيل", val:an.delivery_mentions_count, cls:"c-accent"},
+    {lbl:"تقييمات فيها توصيل", val:an.reviews_with_delivery_signals, cls:"c-accent"},
+    {lbl:"صور فيها توصيل", val:an.photos_with_delivery_signals, cls:"c-purple"},
+    {lbl:"إجمالي الصور", val:an.total_photos_analyzed, cls:"c-muted"},
+    {lbl:"مؤشر اعتماد المنصات", val:obs.platform_dependency_index, cls:"c-purple"},
+    {lbl:"عمال مقدّرون", val:obs.estimated_gig_workers, cls:"c-yellow"},
+    {lbl:"مسجلون رسمياً", val:obs.registered_workers, cls:"c-green"},
+    {lbl:"الفجوة", val:obs.activity_gap, cls:"c-red"},
+  ].map(m=>`<div class="metric"><div class="metric-val ${m.cls}">${m.val}</div><div class="metric-lbl">${m.lbl}</div></div>`).join("");
+
+  const totalReviews = an.total_reviews_analyzed || 1;
+  const totalPhotos = an.total_photos_analyzed || 1;
+  document.getElementById("r-bars").innerHTML = [
+    {lbl:"تقييمات فيها كلمات توصيل", val:an.reviews_with_delivery_signals, max:totalReviews, color:"var(--accent)"},
+    {lbl:"صور فيها دليل توصيل", val:an.photos_with_delivery_signals, max:totalPhotos, color:"var(--purple)"},
+    {lbl:"اعتماد المنصات", val:an.platform_dependency_score, max:10, color:"var(--accent2)"},
+  ].map(b=>`
+    <div class="bar-wrap">
+      <div class="bar-label"><span>${b.lbl}</span><span>${b.val} / ${b.max}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.min((b.val/b.max)*100,100)}%;background:${b.color};"></div></div>
+    </div>`).join("");
+
+  const gc = obs.gap_level==="Large Gap"?"var(--red)":obs.gap_level==="Medium Gap"?"var(--yellow)":"var(--green)";
+  document.getElementById("r-gap").innerHTML = [
+    {k:"التقييمات المحللة", v:an.total_reviews_analyzed},
+    {k:"الصور المحللة", v:an.total_photos_analyzed},
+    {k:"كثافة كلمات التوصيل", v:(an.keyword_density*100).toFixed(1)+"%"},
+    {k:"العمال المقدّرون", v:obs.estimated_gig_workers},
+    {k:"المسجلون رسمياً", v:obs.registered_workers},
+    {k:"حجم الفجوة", v:obs.activity_gap},
+    {k:"مستوى الفجوة", v:`<span style="color:${gc};font-weight:700;">${obs.gap_level}</span>`},
+  ].map(r=>`<div class="gap-row"><span class="gap-key">${r.k}</span><span class="gap-val">${r.v}</span></div>`).join("");
+
+  const kws = [...(an.delivery_keywords||[]),...(an.delivery_objects||[])].filter(Boolean);
+  document.getElementById("r-kw").innerHTML = kws.length ? kws.map(k=>`<span class="kw">${k}</span>`).join("") : `<span style="color:var(--muted)">لم تُكتشف كلمات دالة</span>`;
+  document.getElementById("r-summary").textContent = an.summary || "—";
+  document.getElementById("results").style.display = "block";
+  document.getElementById("results").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function renderDashboard() {
+  if (history.length < 1) {
+    document.getElementById("dash-empty").style.display = "block";
+    document.getElementById("dash-content").style.display = "none";
+    return;
+  }
+  document.getElementById("dash-empty").style.display = "none";
+  document.getElementById("dash-content").style.display = "block";
+
+  const names = history.map(r => r.name);
+  const workers = history.map(r => r.observatory_metrics.estimated_gig_workers);
+  const registered = history.map(r => r.observatory_metrics.registered_workers);
+  const gaps = history.map(r => r.observatory_metrics.activity_gap);
+  const activity = history.map(r => r.observatory_metrics.digital_activity_score);
+  const riskColors = history.map(r => r.analysis.risk_level==="High"?"#f04060":r.analysis.risk_level==="Medium"?"#f5a623":"#0fd494");
+
+  const baseOpts = {
+    responsive:true,
+    plugins:{legend:{labels:{color:"#dde8f5",font:{family:"IBM Plex Sans Arabic"}}}},
+    scales:{x:{ticks:{color:"#52708a"},grid:{color:"#1a3050"}},y:{ticks:{color:"#52708a"},grid:{color:"#1a3050"}}}
+  };
+
+  if (charts.workers) charts.workers.destroy();
+  charts.workers = new Chart(document.getElementById("chart-workers"), {
+    type:"bar",
+    data:{labels:names,datasets:[
+      {label:"عمال مقدّرون",data:workers,backgroundColor:"#f5a623"},
+      {label:"مسجلون رسمياً",data:registered,backgroundColor:"#0fd494"},
+    ]},
+    options:{...baseOpts,plugins:{...baseOpts.plugins,title:{display:true,text:"توزيع العمال",color:"#00c8f0",font:{size:14}}}}
+  });
+
+  if (charts.gap) charts.gap.destroy();
+  charts.gap = new Chart(document.getElementById("chart-gap"), {
+    type:"bar",
+    data:{labels:names,datasets:[{label:"حجم الفجوة",data:gaps,backgroundColor:"#f04060"}]},
+    options:{...baseOpts,plugins:{...baseOpts.plugins,title:{display:true,text:"فجوة التسجيل",color:"#00c8f0",font:{size:14}}}}
+  });
+
+  if (charts.activity) charts.activity.destroy();
+  charts.activity = new Chart(document.getElementById("chart-activity"), {
+    type:"bar",
+    data:{labels:names,datasets:[{label:"نقاط النشاط الرقمي",data:activity,backgroundColor:riskColors}]},
+    options:{...baseOpts,plugins:{...baseOpts.plugins,title:{display:true,text:"نقاط النشاط الرقمي",color:"#00c8f0",font:{size:14}}}}
+  });
+}
+
+function renderHistory() {
+  const list = document.getElementById("hist-list");
+  if (!history.length) { list.innerHTML=`<div class="empty">لم يتم تحليل أي مطعم بعد</div>`; document.getElementById("hist-compare").style.display="none"; return; }
+  list.innerHTML = history.map((r,i)=>`
+    <div class="hist-item" onclick="showHistDetail(${i})">
+      <div><div class="hist-name">${r.name}</div><div class="hist-meta">${r.address||""} · ${r.timestamp}</div></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="c-accent" style="font-weight:700;">${r.observatory_metrics.digital_activity_score}</span>
+        <span class="risk-badge risk-${r.analysis.risk_level}" style="padding:4px 12px;font-size:.75rem;">${r.analysis.risk_level}</span>
+      </div>
+    </div>`).join("");
+  document.getElementById("hist-compare").style.display = "block";
+  document.getElementById("compare-body").innerHTML = history.map(r=>{
+    const obs=r.observatory_metrics;
+    const gc=obs.gap_level==="Large Gap"?"var(--red)":obs.gap_level==="Medium Gap"?"var(--yellow)":"var(--green)";
+    return `<tr>
+      <td style="padding:10px;font-weight:600;">${r.name}</td>
+      <td style="padding:10px;color:var(--accent);">${obs.digital_activity_score}</td>
+      <td style="padding:10px;">${obs.estimated_gig_workers}</td>
+      <td style="padding:10px;color:${gc};">${obs.activity_gap} — ${obs.gap_level}</td>
+      <td style="padding:10px;"><span class="risk-badge risk-${r.analysis.risk_level}" style="padding:3px 10px;font-size:.73rem;">${r.analysis.risk_level}</span></td>
+    </tr>`;}).join("");
+}
+
+function showHistDetail(i) {
+  const r = history[i];
+  document.querySelectorAll(".tab")[0].click();
+  renderResults(r);
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+</script>
+</body>
+</html>

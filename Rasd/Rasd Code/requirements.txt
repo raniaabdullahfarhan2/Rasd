@@ -1,0 +1,4 @@
+flask
+requests
+google-genai
+gunicorn
